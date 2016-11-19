@@ -5,7 +5,7 @@
 ## Project Architecture
 
 ## Dependencies
-    
+
   1) AWS Credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS)
   2) Redis as a Broker and Backend for Celery and keep tracking of Container state
 
@@ -60,3 +60,4 @@ https://gist.github.com/jakedahn/374e2e54fdcef711bf2a
 https://coreos.com/os/docs/latest/customizing-docker.html
 http://flask.pocoo.org/docs/0.11/patterns/celery/
 http://docs.celeryproject.org/en/latest/userguide/canvas.html#guide-canvas
+http://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python

@@ -31,5 +31,9 @@ curl -s -i -H 'Content-Type: application/json' -X POST --data '{ "docker_image":
 echo
 
 echo "######## /SCHEDULE valid"
-curl -s -i -H 'Content-Type: application/json' -X POST --data '{ "docker_image": "alpine:latest", "schedule": "2016-11-17 23:59:59", "env": ["key1=value=1", "key2=value2", "key3=value3"], "cmd": "sleep 30" }' $BASE_URL/schedule
+curl -s -i -H 'Content-Type: application/json' -X POST --data '{ "docker_image": "alpine:latest", "schedule": "2016-11-18T23:59:59", "env": ["key1=value", "key2=value2"], "cmd": "sleep 120" }' $BASE_URL/schedule
 echo
+
+#echo "######## /SCHEDULE valid"
+#curl -s -i -H 'Content-Type: application/json' -X POST --data '{ "docker_image": "python:2.7", "schedule": "2016-11-17 23:59:59", "env": [ "foo=bar"] }' $BASE_URL/schedule
+#echo
