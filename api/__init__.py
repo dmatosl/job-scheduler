@@ -5,7 +5,9 @@ from celery.result import AsyncResult
 from celery.task.control import inspect
 from celery import chain
 from jobs.tasks import *
-from datetime import datetime
+from jobs.utils.job_store import JobStore
+from jobs.utils.id_generator import id_generator
+import dateutil.parser
 import logging
 import time
 
@@ -38,9 +40,6 @@ class Healthcheck(Resource):
         return {'message': 'live'}
 
 class Schedule(Resource):
-    #decorators = [
-    #    jsonschema.validate('schedule', 'post_schedule')
-    #]
 
     def post(self):
         """
@@ -60,6 +59,7 @@ class Schedule(Resource):
         """
         logger = logging.getLogger("Schedule")
         data = request.get_json()
+        jobStore = JobStore()
 
         # Validate Json Schema with required args (docker_image, schedule)
         args = schedule_parser.parse_args()
@@ -75,36 +75,79 @@ class Schedule(Resource):
             if len(args['cmd']) == 0:
                 logger.debug("docker cmd is null")
                 return {'message': {'cmd': 'can not be null'}}, 400
+        else:
+            data['cmd'] = ''
 
         # Validate date format
         try:
-            valid_date = datetime.strptime(args['schedule'], "%Y-%m-%d %H:%M:%S")
+            valid_date = dateutil.parser.parse(args['schedule'])
         except (KeyError, TypeError, ValueError) as e:
             logger.debug("Date format validation Exception: %s" % e)
-            return {'message': {'schedule': 'schedule does not match format YYYY-mm-dd xx:yy:zz'}}, 400
+            return {'message': {'schedule': 'schedule does not match ISO-8601 date format'}}, 400
 
         # Validate env type
         if 'env' in data:
             if type(data['env']) != type([]) :
                 logger.debug("Env validation is not a list: (type: %s, data: %s)" % (type(data['env']), data) )
                 return {'message': {'env': 'must be a list'}}, 400
+        else:
+            data['env'] = ''
+
+        docker_job_settings = {
+            'docker_image': args['docker_image'],
+            'env': data['env'],
+            'cmd': data['cmd']
+        }
+
+        # generate_uuid
+        uuid = id_generator()
+
+        logger.info("preparing docker container settings: %s" % docker_job_settings)
 
         # Schedule job on Celery
         try:
-            #job = my_task.apply_async(args=[10,10], eta=valid_date)
             job = chain(
-                    run_ec2_spot_instance.s(app.config['AWS_SETTINGS']) |
-                    run_docker_container.s(data['docker_image'],data['env'],data['cmd']) |
-                    terminate_ec2_spot_instance.s()
+                    run_ec2_spot_instance.s(uuid, app.config['AWS_SETTINGS']),
+                    run_docker_container.s(uuid, data['docker_image'],data['env'],data['cmd']),
+                    run_mon.s(uuid)
                 ).apply_async(eta=valid_date)
+            logger.info("last: %s, parent_1: %s " % (job.id, job.parent.id))
         except Exception as e:
             logger.debug("unable to schedule job: %s" % e )
             return {'message': 'unable to schedule job, try again latter'}, 500
 
+        # Add job status to redis
+        job_status = {
+            'id': uuid ,
+            'status': 'scheduled',
+            'schedule': data['schedule'],
+            'docker': {
+                'container_id': '',
+                'container_status': '',
+                'container_exit_code': '',
+                'docker_image': data['docker_image'],
+                'environment': data['env'],
+                'command': data['cmd']
+            },
+            'aws': {
+                'spot_id' : '',
+                'instance_id': '',
+                'dns_name': '',
+                'ip_address': ''
+            },
+            'celery': {
+                'job_parent_id': job.parent.parent.id,
+                'job_children_ids': [job.parent.id, job.id]
+            }
+        }
+
+        jobStore.setJobStatus(uuid, job_status)
+
         # Return job id
         return {
-            "id": job.parent.parent.id,
-            "message": "job successfully scheduled"
+            'id': uuid,
+            'status': 'scheduled',
+            'message': 'job successfully scheduled'
         }
 
 class ScheduleList(Resource):
@@ -113,7 +156,12 @@ class ScheduleList(Resource):
 
 class ScheduleStatus(Resource):
     def get(self,id):
-        job = inspect(id)
+        jobStore = JobStore()
+        status = jobStore.getJobStatus(id)
+        if status == None:
+            return { 'message': 'not found'}, 404
+
+        return status
 
 
 class ScheduleCallback(Resource):
