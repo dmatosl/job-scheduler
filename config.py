@@ -23,12 +23,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT=['json']
 CELERY_TASK_RESULT_EXPIRES = 18000  # 5 hours.
-CELERYBEAT_SCHEDULE = {
-    "runs-jobs-mon-each-10-seconds": {
-        "task": "api.jobs.tasks.run_jobs_mon",
-        "schedule": 30.0,
-    },
-}
 
 # AWS Configuration
 AWS_SETTINGS = {
