@@ -28,9 +28,16 @@ CELERY_TASK_RESULT_EXPIRES = 18000  # 5 hours.
 AWS_SETTINGS = {
     "AWS_SECRET_ACCESS_KEY": os.environ['AWS_SECRET_ACCESS_KEY'],
     "AWS_ACCESS_KEY" : os.environ['AWS_ACCESS_KEY'],
+    "AWS_KEY_NAME": "daniel.matos",
     "AWS_AMI" : "ami-4d795c5a",
+    #"AWS_AMI" : "ami-b73b63a0",
     "AWS_REGION" : "us-east-1",
-    "AWS_PRICE" : "0.1",
+    "AWS_SPOT_PRICE" : "0.1",
     "AWS_INSTANCE_TYPE" : "c3.large",
-    "AWS_INSTANCE_COUNT" : "1"
+    "AWS_INSTANCE_COUNT" : "1",
+    "AWS_USER_DATA": open("/data/user_data_docker").read(),
+    "AWS_SECURITY_GROUPS": ['danielmatos-sg'],
+    "AWS_TAGS":{
+        'Name': 'job-cheduler-daniel.matos'
+    }
 }
