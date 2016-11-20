@@ -1,6 +1,7 @@
-FROM python:2.7
+FROM python:2.7-slim
 
 WORKDIR /data
-COPY requirements.txt /data/requirements.txt
-RUN apt-get update && apt-get install -y vim && pip install bpython
+ADD . /data
+
 RUN pip install -r requirements.txt
+CMD ["/data/run.sh"]

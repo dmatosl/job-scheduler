@@ -3,6 +3,41 @@
 ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCraLh293buGTXU4MNziPADBl36zmuWjdgb6OXUZqvNScRy9CW1wJ0N4UDhOhmdCfRBBBwhHYFCVaVtgiVunAMztO7o1D8Kk4NybwYl+Z2C9q3LWA77NmQe8nqSzQJeC7KlW2rFQfVraM2X/rWCqEiV2HQyTiVOwuXCscSo7hpwyjLuT/XuNFkTtTaCXubLr2u3T+mg5H+bwqQp1YnQ2Msp7AZFmng016bL+77oFg9efewHvbMNQexxO13hwdfYvoYK3bD/0qoHNdCMQUGw7T2j13LacoTbtHfTUf8Rwp1aaDRI+ocenoSjO52sxoG8YAfeo+abSqCZUtj02Ub0zSIT
 
+write-files:
+  - path: /run/job_scheduler_fetch_app.sh
+    permissions: 0755
+    content: |
+      #!/bin/bash
+
+      set -eof pipefail
+
+      GIT_REPO=${REPO:-"https://github.com/dmatosl/job-scheduler.git"}
+      TMP_DIR="/tmp/src"
+
+      if [[ ! -d ${TMP_DIR} ]]; then
+          mkdir -p /tmp/src
+      fi
+
+      pushd $TMP_DIR
+          git clone ${GIT_REPO}
+          [[ $? -eq 0 ]] && exit 0 || exit 1
+      popd
+
+  - path: /run/job_scheduler_build_app.sh
+    permissions: 0755
+    content: |
+      #!/bin/bash
+
+      set -eof pipefail
+
+      APP_NAME=${APP:-"job-scheduler"}
+      SRC_DIR=${APP_DIR:-"/tmp/src/job-scheduler"}
+      TAG=${TAG:-"0.0.1"}
+
+      pushd $SRC_DIR
+          /usr/bin/docker build -t ${APP_NAME}:${TAG} .
+      popd
+
 coreos:
   units:
 #    - name: docker-tls-tcp.socket
@@ -31,9 +66,9 @@ coreos:
         [Service]
         Restart=always
         ExecStartPre=/usr/bin/docker pull redis:alpine
-        ExecStart=/usr/bin/docker run -v /var/lib/redis:/data --name redis redis:alpine
-        ExecStop=/usr/bin/docker stop -t 2 redis
-        ExecStopPost=/usr/bin/docker rm -f redis 2>&1
+        ExecStart=/usr/bin/docker run -v /var/lib/redis:/data --name job-scheduler-redis redis:alpine
+        ExecStop=/usr/bin/docker stop -t 2 job-scheduler-redis
+        ExecStopPost=/usr/bin/docker rm -f job-scheduler-redis 2>&1
 
     - name: job-scheduler-builder.service
       command: start
@@ -46,7 +81,7 @@ coreos:
         [Service]
         Type=oneshot
         ExecStart=/run/job_scheduler_fetch_app.sh
-        ExecStart=/run/job_scheduler_build.sh
+        ExecStart=/run/job_scheduler_build_app.sh
 
     - name: docker.service
       command: start
