@@ -73,6 +73,13 @@ class AWSSpotInstance():
                 logger.debug('instance not ready ... waiting')
                 time.sleep(self.__CHECK_INTERVAL)
 
+        while self.state != 'running':
+            logger.debug('waiting for instance reach running state: (state: %s)' % self.state)
+            time.sleep(self.__CHECK_INTERVAL)
+            self.update_instance(self.instance_id)
+
+        return self.state
+
     def update_instance(self,instance_id):
         try:
             instance = self.cli.get_only_instances(instance_ids=instance_id)[0]
@@ -82,13 +89,22 @@ class AWSSpotInstance():
             self.instance_id = instance.id
         except EC2ResponseError as e:
             logger.info('Instance does not exist, %s' % e)
+            return False
+
+        return self.state
 
     def terminate_spot_instance(self, instance_id):
         try:
             instance = self.cli.get_only_instances(instance_ids=instance_id)[0]
             instance.terminate()
+
+            while self.state != 'terminated':
+                logger.debug('waiting for instance reach terminated state: (state: %s)' % self.state)
+                time.sleep(self.__CHECK_INTERVAL)
+                self.update_instance(self.instance_id)
+
         except EC2ResponseError as e:
             logger.info('Instance does not exist, %s' % e)
             return False
 
-        return True
+        return self.state
