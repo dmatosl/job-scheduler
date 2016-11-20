@@ -1,0 +1,49 @@
+#cloud-config
+
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCraLh293buGTXU4MNziPADBl36zmuWjdgb6OXUZqvNScRy9CW1wJ0N4UDhOhmdCfRBBBwhHYFCVaVtgiVunAMztO7o1D8Kk4NybwYl+Z2C9q3LWA77NmQe8nqSzQJeC7KlW2rFQfVraM2X/rWCqEiV2HQyTiVOwuXCscSo7hpwyjLuT/XuNFkTtTaCXubLr2u3T+mg5H+bwqQp1YnQ2Msp7AZFmng016bL+77oFg9efewHvbMNQexxO13hwdfYvoYK3bD/0qoHNdCMQUGw7T2j13LacoTbtHfTUf8Rwp1aaDRI+ocenoSjO52sxoG8YAfeo+abSqCZUtj02Ub0zSIT
+
+write_files:
+  - path: /etc/docker/ca.pem
+    permissions: 0644
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIFNDCCAx6gAwIBAgIBATALBgkqhkiG9w0BAQswLTEMMAoGA1UEBhMDVVNBMRAw
+
+  - path: /etc/docker/server.pem
+    permissions: 0644
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIFNDCCAx6gAwIBAgIBATALBgkqhkiG9w0BAQswLTEMMAoGA1UEBhMDVVNBMRAw
+
+
+  - path: /etc/docker/server-key.pem
+    permissions: 0644
+    content: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIFNDCCAx6gAwIBAgIBATALBgkqhkiG9w0BAQswLTEMMAoGA1UEBhMDVVNBMRAw
+
+coreos:
+  units:
+#    - name: docker-tls-tcp.socket
+    - name: docker-tcp.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Docker Secured Socket for the API
+
+        [Socket]
+        ListenStream=2376
+        BindIPv6Only=both
+        Service=docker.service
+
+        [Install]
+        WantedBy=sockets.target
+    - name: docker.service
+      command: start
+#      drop-ins:
+#        - name: 10-tls-verify.conf
+#          content: |
+#            [Service]
+#            Environment="DOCKER_OPTS=--tlsverify --tlscacert=/etc/docker/ca.pem --tlscert=/etc/docker/server.pem --tlskey=/etc/docker/server-key.pem"

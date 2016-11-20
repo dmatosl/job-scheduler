@@ -1,0 +1,52 @@
+#cloud-config
+
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCraLh293buGTXU4MNziPADBl36zmuWjdgb6OXUZqvNScRy9CW1wJ0N4UDhOhmdCfRBBBwhHYFCVaVtgiVunAMztO7o1D8Kk4NybwYl+Z2C9q3LWA77NmQe8nqSzQJeC7KlW2rFQfVraM2X/rWCqEiV2HQyTiVOwuXCscSo7hpwyjLuT/XuNFkTtTaCXubLr2u3T+mg5H+bwqQp1YnQ2Msp7AZFmng016bL+77oFg9efewHvbMNQexxO13hwdfYvoYK3bD/0qoHNdCMQUGw7T2j13LacoTbtHfTUf8Rwp1aaDRI+ocenoSjO52sxoG8YAfeo+abSqCZUtj02Ub0zSIT
+
+coreos:
+  units:
+#    - name: docker-tls-tcp.socket
+    - name: docker-tcp.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Docker Secured Socket for the API
+
+        [Socket]
+        ListenStream=2376
+        BindIPv6Only=both
+        Service=docker.service
+
+        [Install]
+        WantedBy=sockets.target
+    - name : job-scheduler-redis.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=job-scheduler redis container
+        After=docker.service
+
+        [Service]
+        Restart=always
+        ExecStartPre=/usr/bin/docker pull redis:alpine
+        ExecStart=/usr/bin/docker run -v /var/lib/redis:/data --name redis redis:alpine
+        ExecStop=/usr/bin/docker stop -t 2 redis
+        ExecStopPost=/usr/bin/docker rm -f redis 2>&1
+
+    - name: job-scheduler-builder.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=job-scheduler app build image
+        After=docker.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/run/job_scheduler_fetch_app.sh
+        ExecStart=/run/job_scheduler_build.sh
+
+    - name: docker.service
+      command: start
