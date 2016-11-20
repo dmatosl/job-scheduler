@@ -27,7 +27,7 @@ logging.basicConfig(
 celery = Celery("jobs", broker=app.config['CELERY_BROKER_URL'],
                     backend=app.config['CELERY_BACKEND'])
 celery.conf.update(app.config)
-celery.autodiscover_tasks(['jobs'])
+#celery.autodiscover_tasks(['jobs'])
 
 # Request Parser
 schedule_parser = reqparse.RequestParser()
