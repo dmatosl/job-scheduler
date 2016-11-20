@@ -117,7 +117,7 @@ coreos:
         [Service]
         EnvironmentFile=/run/job-scheduler.env
         Restart=always
-        ExecStart=/usr/bin/docker run --name job-scheduler-app -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"  --link job-scheduler-redis:redis job-scheduler:${TAG}
+        ExecStart=/usr/bin/docker run --name job-scheduler-app -p 80:8080 -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"  --link job-scheduler-redis:redis job-scheduler:${TAG}
         ExecStop=/usr/bin/docker stop -t 2 job-scheduler-app
         ExecStopPost=/usr/bin/docker rm -f job-scheduler-app 2>&1
 
