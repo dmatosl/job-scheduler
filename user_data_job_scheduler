@@ -4,6 +4,13 @@ ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCraLh293buGTXU4MNziPADBl36zmuWjdgb6OXUZqvNScRy9CW1wJ0N4UDhOhmdCfRBBBwhHYFCVaVtgiVunAMztO7o1D8Kk4NybwYl+Z2C9q3LWA77NmQe8nqSzQJeC7KlW2rFQfVraM2X/rWCqEiV2HQyTiVOwuXCscSo7hpwyjLuT/XuNFkTtTaCXubLr2u3T+mg5H+bwqQp1YnQ2Msp7AZFmng016bL+77oFg9efewHvbMNQexxO13hwdfYvoYK3bD/0qoHNdCMQUGw7T2j13LacoTbtHfTUf8Rwp1aaDRI+ocenoSjO52sxoG8YAfeo+abSqCZUtj02Ub0zSIT
 
 write-files:
+  - path: /run/job-scheduler.env
+    permissions: 0640
+    content: |
+      TAG="0.0.1"
+      AWS_ACCESS_KEY="*****************"
+      AWS_SECRET_ACCESS_KEY="**************"
+
   - path: /run/job_scheduler_fetch_app.sh
     permissions: 0755
     content: |
@@ -79,9 +86,40 @@ coreos:
         After=docker.service
 
         [Service]
+        EnvironmentFile=/run/job-scheduler.env
         Type=oneshot
         ExecStart=/run/job_scheduler_fetch_app.sh
         ExecStart=/run/job_scheduler_build_app.sh
+
+    - name : job-scheduler-worker.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=job-scheduler-worker container
+        After=job-scheduler-redis.service
+
+        [Service]
+        EnvironmentFile=/run/job-scheduler.env
+        Restart=always
+        ExecStart=/usr/bin/docker run --name job-scheduler-worker -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"  --link job-scheduler-redis:redis job-scheduler:${TAG} celery -A api.celery worker --concurrency=5 --loglevel=info
+        ExecStop=/usr/bin/docker stop -t 2 job-scheduler-worker
+        ExecStopPost=/usr/bin/docker rm -f job-scheduler-worker 2>&1
+
+    - name : job-scheduler-app.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=job-scheduler-app container
+        After=job-scheduler-redis.service
+
+        [Service]
+        EnvironmentFile=/run/job-scheduler.env
+        Restart=always
+        ExecStart=/usr/bin/docker run --name job-scheduler-app -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"  --link job-scheduler-redis:redis job-scheduler:${TAG}
+        ExecStop=/usr/bin/docker stop -t 2 job-scheduler-app
+        ExecStopPost=/usr/bin/docker rm -f job-scheduler-app 2>&1
 
     - name: docker.service
       command: start
