@@ -60,14 +60,19 @@ class AWSSpotInstance():
             if len(instance_id) == len(spot_ids):
                 logger.debug('instance_ready')
 
-                for instance in self.cli.get_only_instances(instance_ids=instance_id):
-                    instance.update()
-                    self.state = instance.state
-                    self.ip_address = instance.ip_address
-                    self.dns_name = instance.public_dns_name
-                    self.instance_id = instance.id
+                try:
+                    for instance in self.cli.get_only_instances(instance_ids=instance_id):
 
-                break
+                        instance.update()
+                        self.state = instance.state
+                        self.ip_address = instance.ip_address
+                        self.dns_name = instance.public_dns_name
+                        self.instance_id = instance.id
+
+                    break
+
+                except EC2ResponseError as e:
+                    logger.info('aws return 400 (instance not found, ignoring), %s' % e)
 
             else:
                 logger.debug('instance not ready ... waiting')
@@ -101,7 +106,7 @@ class AWSSpotInstance():
             while self.state != 'terminated':
                 logger.debug('waiting for instance reach terminated state: (state: %s)' % self.state)
                 time.sleep(self.__CHECK_INTERVAL)
-                self.update_instance(self.instance_id)
+                self.update_instance(instance_id)
 
         except EC2ResponseError as e:
             logger.info('Instance does not exist, %s' % e)

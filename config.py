@@ -36,7 +36,7 @@ AWS_SETTINGS = {
     "AWS_INSTANCE_TYPE" : "c3.large",
     "AWS_INSTANCE_COUNT" : "1",
     "AWS_USER_DATA": open("/data/user_data_docker").read(),
-    "AWS_SECURITY_GROUPS": ['danielmatos-sg'],
+    "AWS_SECURITY_GROUPS": ['job_scheduler_app_sg'],
     "AWS_TAGS":{
         'Name': 'job-cheduler-daniel.matos'
     }
