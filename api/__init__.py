@@ -8,6 +8,8 @@ from jobs.tasks import *
 from jobs.utils.job_store import JobStore
 from jobs.utils.id_generator import id_generator
 import dateutil.parser
+import iso8601
+from iso8601 import ParseError
 import logging
 import time
 
@@ -80,8 +82,8 @@ class Schedule(Resource):
 
         # Validate date format
         try:
-            valid_date = dateutil.parser.parse(args['schedule'])
-        except (KeyError, TypeError, ValueError) as e:
+            valid_date = iso8601.parse_date(args['schedule'])
+        except (KeyError, TypeError, ValueError, ParseError) as e:
             logger.debug("Date format validation Exception: %s" % e)
             return {'message': {'schedule': 'schedule does not match ISO-8601 date format'}}, 400
 
@@ -107,11 +109,14 @@ class Schedule(Resource):
         # Schedule job on Celery
         try:
             job = chain(
-                    run_ec2_spot_instance.s(uuid, app.config['AWS_SETTINGS']),
-                    run_docker_container.s(uuid, data['docker_image'],data['env'],data['cmd']),
-                    run_mon.s(uuid)
+                    run_container.s(
+                        uuid,
+                        app.config['AWS_SETTINGS'],
+                        docker_job_settings
+                    )
                 ).apply_async(eta=valid_date)
-            logger.info("last: %s, parent_1: %s " % (job.id, job.parent.id))
+            logger.info("celery job_id: %s " % (job.id))
+
         except Exception as e:
             logger.debug("unable to schedule job: %s" % e )
             return {'message': 'unable to schedule job, try again latter'}, 500
@@ -130,14 +135,13 @@ class Schedule(Resource):
                 'command': data['cmd']
             },
             'aws': {
-                'spot_id' : '',
                 'instance_id': '',
                 'dns_name': '',
-                'ip_address': ''
+                'ip_address': '',
+                'ready': False
             },
             'celery': {
-                'job_parent_id': job.parent.parent.id,
-                'job_children_ids': [job.parent.id, job.id]
+                'job_parent_id': job.parent.parent.id
             }
         }
 
@@ -152,7 +156,8 @@ class Schedule(Resource):
 
 class ScheduleList(Resource):
     def get(self):
-        pass
+        jobStore = JobStore()
+        return jobStore.getAllJobs()
 
 class ScheduleStatus(Resource):
     def get(self,id):

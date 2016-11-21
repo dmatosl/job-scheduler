@@ -68,7 +68,6 @@ class AWSSpotInstance():
                         self.ip_address = instance.ip_address
                         self.dns_name = instance.public_dns_name
                         self.instance_id = instance.id
-
                     break
 
                 except EC2ResponseError as e:

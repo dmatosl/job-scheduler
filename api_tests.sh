@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_URL=http://localhost:8080
+BASE_URL=http://localhost
 
 echo "######### /PING"
 curl -s ${BASE_URL}/ping
