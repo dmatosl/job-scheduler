@@ -141,7 +141,7 @@ class Schedule(Resource):
                 'ready': False
             },
             'celery': {
-                'job_parent_id': job.parent.parent.id
+                'job_parent_id': job.id
             }
         }
 

@@ -86,10 +86,11 @@ def run_container(self, job_id, aws_settings, docker_settings):
         # Create EC2 Image
         jobStore = JobStore()
         aws = AWSSpotInstance(aws_settings)
-        aws.create_spot_instance()
+        state = aws.create_spot_instance()
+        celery_logger.info("aws instance created %s" % state )
 
         for a in xrange(checking_attemps):
-            job = getJobStatus(job_id)
+            job = jobStore.getJobStatus(job_id)
             if job['aws']['ready']:
                 break
             time.sleep(checking_interval)
