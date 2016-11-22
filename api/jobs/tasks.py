@@ -88,6 +88,7 @@ def run_container(self, job_id, aws_settings, docker_settings):
             celery_logger.info('failed do pull container, aborting task, triggering instance termination %s %s' % (aws.instance_id, job_id))
             job_status['docker']['container_status'] = 'failed'
             job_status['status'] = 'failed'
+            jobStore.setJobStatus(job_id, job_status)
             payload = {'action': 'terminate', 'instance_id': aws.instance_id, 'job_id': job_id}
             post = requests.post(callback_url, json=payload)
             return job_status
