@@ -206,6 +206,7 @@ class ScheduleCallback(Resource):
             # Schedule job on Celery
             try:
                 job = chain(terminate_ec2_spot_instance.s(
+                    args['job_id'],
                     args['instance_id'],
                     app.config['AWS_SETTINGS']
                 )).apply_async()

@@ -11,11 +11,17 @@ import re
 celery_logger = get_task_logger(__name__)
 
 @shared_task(bind=True, max_retries=3)
-def terminate_ec2_spot_instance(self, instance_id, aws_settings):
+def terminate_ec2_spot_instance(self, job_id, instance_id, aws_settings):
     try:
-        celery_logger.info("terminating instance_id: %s" % instance_id)
+        celery_logger.info("terminating instance_id: %s, %s" % (instance_id, job_id))
         aws = AWSSpotInstance(aws_settings)
-        return aws.terminate_spot_instance(instance_id)
+        state = aws.terminate_spot_instance(instance_id)
+        jobStore = JobStore()
+        job_status = jobStore.getJobStatus(job_id)
+        job_status['aws']['state'] = state
+        jobStore.setJobStatus(job_id, job_status)
+        return state
+
     except Exception as e:
         celery_logger.info('terminate_ec2_spot_instance Task execution Failed : %s' % e)
         self.retry(exc=e, countdown=2 ** self.request.retries)
@@ -79,7 +85,12 @@ def run_container(self, job_id, aws_settings, docker_settings):
         )
 
         if container_status == None:
-            raise Exception('failed to pull container image %s' % job_id)
+            celery_logger.info('failed do pull container, aborting task, triggering instance termination %s %s' % (aws.instance_id, job_id))
+            job_status['docker']['container_status'] = 'failed'
+            job_status['status'] = 'failed'
+            payload = {'action': 'terminate', 'instance_id': aws.instance_id, 'job_id': job_id}
+            post = requests.post(callback_url, json=payload)
+            return job_status
 
         job_status['status'] = container_status['State']
         job_status['docker']['container_id'] = container_status['Id']
