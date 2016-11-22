@@ -21,8 +21,9 @@ class DockerContainer():
     def run_container(self, docker_image, env, cmd):
         if self.pull_image(docker_image):
 
-            if env.strip() == '':
-                env = None
+            if type(env) == str or type(env) == unicode:
+                if env.strip() == '':
+                    env = None
 
             if cmd.strip() == '':
                 cmd = None
