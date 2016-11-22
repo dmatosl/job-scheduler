@@ -19,6 +19,7 @@ def terminate_ec2_spot_instance(self, job_id, instance_id, aws_settings):
         jobStore = JobStore()
         job_status = jobStore.getJobStatus(job_id)
         job_status['aws']['state'] = state
+        job_status['aws']['ready'] = False
         jobStore.setJobStatus(job_id, job_status)
         return state
 
