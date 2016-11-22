@@ -36,7 +36,7 @@ def run_container(self, job_id, aws_settings, docker_settings):
 
         # Check if instance was created (retries)
         if len(job_status['aws']['instance_id']) > 1:
-            celery_logger.info("instance already exists, trying to reuse (%s)" % job_status['aws']['instance_id'])
+            celery_logger.info("instance already exists, trying to reuse (%s, %s)" % (job_status['aws']['instance_id'], job_id) )
             aws = AWSSpotInstance(aws_settings)
             aws.update_instance(job_status['aws']['instance_id'])
         else:
@@ -48,7 +48,7 @@ def run_container(self, job_id, aws_settings, docker_settings):
             # Create EC2 Instance
             aws = AWSSpotInstance(aws_settings)
             state = aws.create_spot_instance()
-            celery_logger.info("aws instance created (%s)" % aws.instance_id)
+            celery_logger.info("aws instance created (%s, %s)" % (aws.instance_id, job_id))
 
         job_status['aws']['instance_id'] = aws.instance_id
         job_status['aws']['dns_name'] =  aws.dns_name
@@ -56,16 +56,16 @@ def run_container(self, job_id, aws_settings, docker_settings):
         job_status['aws']['state'] = aws.state
 
         # update ec2 instance -> jobStore
-        celery_logger.info('updating ec2 instance information')
+        celery_logger.info('updating ec2 instance information (%s)' % job_id)
         jobStore.setJobStatus(job_id, job_status)
 
         for a in xrange(checking_attemps):
             job_status = jobStore.getJobStatus(job_id)
-            celery_logger.info("checking if aws instance is ready (%s)" % job_status['aws']['ready'])
+            celery_logger.info("checking if aws instance is ready (%s, %s)" % (job_status['aws']['ready'], job_id) )
             if job_status['aws']['ready'] == True:
                 break
             if a == (checking_attemps -2) :
-                raise Exception('ec2 instance  did not became ready on time')
+                raise Exception('ec2 instance  did not became ready on time (%s)' % job_id)
 
             time.sleep(checking_interval)
 
@@ -78,6 +78,9 @@ def run_container(self, job_id, aws_settings, docker_settings):
             docker_settings['cmd']
         )
 
+        if container_status == None:
+            raise Exception('failed to pull container image %s' % job_id)
+
         job_status['status'] = container_status['State']
         job_status['docker']['container_id'] = container_status['Id']
         job_status['docker']['container_status'] = container_status['State']
@@ -85,13 +88,13 @@ def run_container(self, job_id, aws_settings, docker_settings):
         jobStore.setJobStatus(job_id, job_status)
 
         # Start Docker Container mon
-        celery_logger.info("starting container mon: %s" % (job_status['docker']['container_id']) )
+        celery_logger.info("starting container mon: %s, %s" % (job_status['docker']['container_id'], job_id) )
         # Waiting for container die state
         for e in docker.get_docker_instance().events(filters={'id': job_status['docker']['container_id']},decode=True):
-            celery_logger.info("docker event appeared: %s" % e )
+            celery_logger.info("docker event appeared: %s %s" % (e, job_id) )
             if 'status' in e:
                 if e['status'] == 'die':
-                    celery_logger.info("docker event 'die' reached: %s" % e )
+                    celery_logger.info("docker event 'die' reached: %s %s" % (e, job_id) )
                     job_status['docker']['container_status'] = e['status']
                     job_status['docker']['container_exit_code'] = e['Actor']['Attributes']['exitCode']
                     job_status['status'] = 'finished'
@@ -104,5 +107,5 @@ def run_container(self, job_id, aws_settings, docker_settings):
                     return job_status
 
     except Exception as e:
-        celery_logger.info('Task execution Failed : %s' % e)
+        celery_logger.info('Task execution Failed : %s %s' % (e, job_id) )
         self.retry(exc=e, countdown=2 ** self.request.retries)
