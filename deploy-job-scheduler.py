@@ -56,7 +56,7 @@ if not 'AWS_SECRET_ACCESS_KEY' in os.environ:
 ###### EC2 Instance
 
 logger.info("Updating user_data with aws credentials")
-user_data = open(os.path.abspath('/user_data/user_data_job_scheduler'),'r').read()
+user_data = open(os.path.abspath('user_data/user_data_job_scheduler'),'r').read()
 user_data = user_data.replace('%AWS_ACCESS_KEY%', os.environ['AWS_ACCESS_KEY'])
 user_data = user_data.replace('%AWS_SECRET_ACCESS_KEY%', os.environ['AWS_SECRET_ACCESS_KEY'])
 
@@ -70,14 +70,23 @@ state = aws.create_spot_instance()
 
 print "##########################################"
 print ""
+print "AWS Information"
+print ""
 print "Instance_id: %s" % aws.instance_id
 print "Instance_State: %s" % aws.state
 print "Instance_dns_name: %s" % aws.dns_name
 print "Instance_ip_address: %s" % aws.ip_address
 print ""
-print "API Endpoint Healthcheck: http://%s/healthcheck" % aws.dns_name
-print "API Endpoint Schedule: http://%s/schedule" % aws.dns_name
-print "API Endpoint Status: http://%s/status/<string:id>" % aws.dns_name
-print "API Endpoint List: http://%s/list" % aws.dns_name
-print "API Endpoint Callback: http://%s/callback" % aws.dns_name
+print ""
+print "SSH Access to Instance: ssh -i <your_key> core@%s" % aws.ip_address
+print ""
+print "################################# Testing API"
+print ""
+print "Check if containers job-scheduler-api, job-scheduler-worker and job-scheduler-redis are running (they could take a few seconds to start)"
+print ""
+print "API Endpoint Healthcheck: http://localhost/healthcheck" % aws.dns_name
+print "API Endpoint Schedule: http://localhost/schedule" % aws.dns_name
+print "API Endpoint Status: http://localhost/status/<string:id>" % aws.dns_name
+print "API Endpoint List: http://localhost/list" % aws.dns_name
+print "API Endpoint Callback: http:/localhost/callback" % aws.dns_name
 print "##########################################"
