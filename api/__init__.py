@@ -197,12 +197,14 @@ class ScheduleCallback(Resource):
             return { 'message': 'job not found'}, 404
 
         if args['action'] == 'update':
+            logger.info("received update request: %s, %s" % (args['job_id'], args['instance_id']))
             job_status['aws']['ready'] = True
             jobStore.setJobStatus(args['job_id'], job_status)
 
             return {'message': 'success'}
 
         if args['action'] == 'terminate':
+            logger.info("received terminate request: %s, %s" % (args['job_id'], args['instance_id']))
             # Schedule job on Celery
             try:
                 job = chain(terminate_ec2_spot_instance.s(
