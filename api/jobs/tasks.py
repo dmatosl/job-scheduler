@@ -86,7 +86,7 @@ def terminate_ec2_spot_instance(self, instance_id, aws_settings):
 @shared_task(bind=True ,max_retries=3)
 def run_container(self, job_id, aws_settings, docker_settings):
     checking_attemps = 100
-    checking_interval = 3
+    checking_interval = 5
     try:
 
         jobStore = JobStore()
@@ -98,13 +98,13 @@ def run_container(self, job_id, aws_settings, docker_settings):
 
         # Check if instance was created (retries)
         if len(job_status['aws']['instance_id']) > 1:
-            celery_logger("instance already exists, trying to reuse (%s)" % job_status['aws']['instance_id'])
+            celery_logger.info("instance already exists, trying to reuse (%s)" % job_status['aws']['instance_id'])
             aws = AWSSpotInstance(aws_settings)
             aws.update_instance(job_status['aws']['instance_id'])
         else:
             # Update user_data for new instance
             user_data = aws_settings['AWS_USER_DATA'].replace('%JOB_ID%', job_id)
-            user_data = aws_settings['AWS_USER_DATA'].replace('%JOB_SCHEDULER_API_CALLBACK_URL%',callback_url)
+            user_data = user_data.replace('%JOB_SCHEDULER_API_CALLBACK_URL%',callback_url)
             aws_settings['AWS_USER_DATA'] = user_data
 
             # Create EC2 Instance
@@ -126,6 +126,9 @@ def run_container(self, job_id, aws_settings, docker_settings):
             celery_logger.info("checking if aws instance is ready (%s)" % job_status['aws']['ready'])
             if job_status['aws']['ready'] == True:
                 break
+            if a == (checking_attemps -2) :
+                raise Exception('ec2 instance  did not became ready on time')
+
             time.sleep(checking_interval)
 
         # RUN Docker Container
