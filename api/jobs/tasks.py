@@ -110,7 +110,7 @@ def run_container(self, job_id, aws_settings, docker_settings):
             # Create EC2 Instance
             aws = AWSSpotInstance(aws_settings)
             state = aws.create_spot_instance()
-            celery_logger.info("aws instance created (%s, %s, %s, %s)" % aws.instance_id, aws.dns_name, aws.ip_address, aws.state )
+            celery_logger.info("aws instance created (%s)" % aws.instance_id)
 
         job_status['aws']['instance_id'] = aws.instance_id
         job_status['aws']['dns_name'] =  aws.dns_name
