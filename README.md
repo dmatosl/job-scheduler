@@ -8,11 +8,11 @@ Project is devided in two main components: (API and Worker) both components use 
 
 - API - Is a simple python (Flask) [http://flask.pocoo.org/] Restful Json API that implements the following routes:
 
-    /schedule   : Schedules the job to be executed at the specified date (respecting ISO8601 format) on Celery Broker (async) and returns job status and id
-    /list       : Get all Scheduled jobs and their status  
-    /status/<string:id> : Get a specific job details (id, status, scheduled time, aws_instance information, docker container information, celery information)
-    /callback   : Receives notification of ready ec2 spot instances to run the disered job and to start instance termination (after job execution)
-    /healthcheck: Simply return live string to check if the service is Up and running
+    * /schedule   : Schedules the job to be executed at the specified date (respecting ISO8601 format) on Celery Broker (async) and returns job status and id
+    * /list       : Get all Scheduled jobs and their status  
+    * /status/<string:id> : Get a specific job details (id, status, scheduled time, aws\_instance information, docker container information, celery information)
+    * /callback   : Receives notification of ready ec2 spot instances to run the disered job and to start instance termination (after job execution)
+    * /healthcheck: Simply return live string to check if the service is Up and running
 
 - WORKER - Is a celery instance that executes scheduled jobs base on ISO8601 date. All the jobs are published in a Redis Broker by the API. Once the worker start running the job it will be responsible to keep tracking of the EC2 spot Instance status monitoring and Docker Container status execution. Based on the response it will mark the job as failed, or successfully finished.
 
