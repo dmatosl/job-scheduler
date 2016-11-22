@@ -188,7 +188,7 @@ class ScheduleStatus(Resource):
 class ScheduleCallback(Resource):
     def post(self):
         # Validate Json Schema with required args (docker_image, schedule)
-        args = schedule_parser.parse_args()
+        args = callback_parser.parse_args()
         jobStore = JobStore()
         job_status = jobStore.getJobStatus(args['job_id'])
 
