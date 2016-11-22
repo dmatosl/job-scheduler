@@ -76,7 +76,7 @@ coreos:
         Restart=always
         ExecStartPre=/usr/bin/docker pull redis:alpine
         ExecStart=/usr/bin/docker run -v /var/lib/redis:/data --name job-scheduler-redis redis:alpine
-        ExecStop=/usr/bin/docker stop -t 2 job-scheduler-redis
+        ExecStop=/usr/bin/docker stop -t 5 job-scheduler-redis
         ExecStopPost=/usr/bin/docker rm -f job-scheduler-redis 2>&1
 
     - name: job-scheduler-builder.service
@@ -105,7 +105,7 @@ coreos:
         EnvironmentFile=/run/job-scheduler.env
         Restart=always
         ExecStart=/usr/bin/docker run --name job-scheduler-worker -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"  --link job-scheduler-redis:redis job-scheduler:${TAG} $WORKER_CMD
-        ExecStop=/usr/bin/docker stop -t 2 job-scheduler-worker
+        ExecStop=/usr/bin/docker stop -t 5 job-scheduler-worker
         ExecStopPost=/usr/bin/docker rm -f job-scheduler-worker 2>&1
 
     - name : job-scheduler-api.service
@@ -120,7 +120,7 @@ coreos:
         EnvironmentFile=/run/job-scheduler.env
         Restart=always
         ExecStart=/usr/bin/docker run --name job-scheduler-api -p 80:8080 -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"  --link job-scheduler-redis:redis job-scheduler:${TAG} $API_CMD
-        ExecStop=/usr/bin/docker stop -t 2 job-scheduler-api
+        ExecStop=/usr/bin/docker stop -t 5 job-scheduler-api
         ExecStopPost=/usr/bin/docker rm -f job-scheduler-api 2>&1
 
     - name: docker.service
