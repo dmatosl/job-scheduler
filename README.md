@@ -60,7 +60,7 @@ POST /schedule
 
 Required Header: 'Content-Type: application/json'
 
-```json```
+```json
 {
   "schedule": "2016-11-22T19:39:22Z",
   "docker_image": "alpine:latest",
@@ -93,7 +93,7 @@ Content-Type: application/json
 
 200 OK
 
-```json```
+```json
 {
   "status": "scheduled",
   "message": "job successfully scheduled",
@@ -106,7 +106,7 @@ GET /status/xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G
 Content-Type: application/json
 
 200 OK
-```json```
+```json
 {
   "status": "running",
   "schedule": "2016-11-18T23:59:59",
@@ -140,7 +140,7 @@ GET /list
 Content-Type: application/json
 
 200 OK
-```json```
+```json
 {
   "jobs": [
     {
@@ -171,7 +171,7 @@ GET /callback
 
 Terminate instance
 
-```json```
+```json
 {
   "action": "terminate",
   "job_id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G",
@@ -181,7 +181,7 @@ Terminate instance
 
 Mark ec2 instance as ready for job execution
 
-```json```
+```json
 {
   "action": "update",
   "job_id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G",
