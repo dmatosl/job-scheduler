@@ -29,9 +29,9 @@ logging.basicConfig(
 
 # Define Callback url
 try:
-    req = requests.get("http://169.254.169.254/latest/meta-data/public-hostname", timeout=3.0)
+    req = requests.get("http://169.254.169.254/latest/meta-data/public-hostname", timeout=(3.0, 3.0))
     callback_url = "http://%s/callback" % req.text
-except (Timeout, ConnectTimeout) as e:
+except (Timeout, ConnectTimeout, ConnectionError) as e:
     callback_url = 'http://127.0.0.1/callback'
 
 conf = JobStore()

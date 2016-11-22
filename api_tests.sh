@@ -39,12 +39,12 @@ run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+5 minutes')
 curl -s -i -H 'Content-Type: application/json' -X POST --data "{ \"docker_image\": \"alpine:latest\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"], \"cmd\": \"sleep 120\" }" $BASE_URL/schedule
 echo
 
-echo "######## /SCHEDULE valid eta=6min"
+echo "######## /SCHEDULE valid eta=6min without cmd"
 run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+6 minutes')
 curl -s -i -H 'Content-Type: application/json' -X POST --data "{ \"docker_image\": \"python:2.7-sim\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"] }" $BASE_URL/schedule
 echo
 
-echo "######## /SCHEDULE valid eta=7min"
+echo "######## /SCHEDULE valid eta=7min without env and cmd"
 run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+7 minutes')
 curl -s -i -H 'Content-Type: application/json' -X POST --data "{ \"docker_image\": \"python:2.7-sim\", \"schedule\": \"${run_date}\" }" $BASE_URL/schedule
 echo
