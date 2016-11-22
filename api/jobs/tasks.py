@@ -103,9 +103,9 @@ def run_container(self, job_id, aws_settings, docker_settings):
             aws.update_instance(job_status['aws']['instance_id'])
         else:
             # Update user_data for new instance
-            user_data = aws_settings['USER_DATA'].replace('%JOB_ID%',job_id)
-            user_data = aws_settings['USER_DATA'].replace('%JOB_SCHEDULER_API_CALLBACK_URL%',callback_url)
-            aws_settings['USER_DATA'] = user_data
+            user_data = aws_settings['AWS_USER_DATA'].replace('%JOB_ID%', job_id)
+            user_data = aws_settings['AWS_USER_DATA'].replace('%JOB_SCHEDULER_API_CALLBACK_URL%',callback_url)
+            aws_settings['AWS_USER_DATA'] = user_data
 
             # Create EC2 Instance
             aws = AWSSpotInstance(aws_settings)
