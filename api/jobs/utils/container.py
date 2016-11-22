@@ -21,6 +21,12 @@ class DockerContainer():
     def run_container(self, docker_image, env, cmd):
         if self.pull_image(docker_image):
 
+            if env.strip() == '':
+                env = None
+
+            if cmd.strip() == '':
+                cmd = None
+
             container = self.cli.create_container(
                 docker_image,
                 environment=env,
@@ -34,4 +40,6 @@ class DockerContainer():
                 filters={'id': container['Id']}
             )[0]
 
-        return container_status
+            return container_status
+        else:
+            return None
