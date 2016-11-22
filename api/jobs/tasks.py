@@ -96,7 +96,7 @@ def run_container(self, job_id, aws_settings, docker_settings):
                     job_status['docker']['container_exit_code'] = e['Actor']['Attributes']['exitCode']
                     job_status['status'] = 'finished'
 
-                    jobStore.setJobStatus(job_id, container)
+                    jobStore.setJobStatus(job_id, job_status)
 
                     # trigger callback url
                     payload = {'action': 'terminate', 'instance_id': aws.instance_id, 'job_id': job_id}
