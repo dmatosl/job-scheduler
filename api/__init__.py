@@ -12,6 +12,8 @@ import iso8601
 from iso8601 import ParseError
 import logging
 import time
+import requests
+from requests.exceptions import Timeout, ConnectTimeout, ConnectionError
 
 # Start Flask APP
 app = Flask(__name__)
@@ -25,17 +27,33 @@ logging.basicConfig(
     level=logging.DEBUG
 )
 
+# Define Callback url
+try:
+    req = requests.get("http://169.254.169.254/latest/meta-data/public-hostname", timeout=3.0)
+    callback_url = "http://%s/callback" % req.text
+except (Timeout, ConnectTimeout) as e:
+    callback_url = 'http://127.0.0.1/callback'
+
+conf = JobStore()
+conf.setJobNotificationUrl(callback_url)
+
 # Celery configuration
 celery = Celery("jobs", broker=app.config['CELERY_BROKER_URL'],
                     backend=app.config['CELERY_BACKEND'])
 celery.conf.update(app.config)
 #celery.autodiscover_tasks(['jobs'])
 
-# Request Parser
+# Schedule Parser
 schedule_parser = reqparse.RequestParser()
 schedule_parser.add_argument('docker_image',type=str, required=True, location='json')
 schedule_parser.add_argument('schedule',type=str, required=True, location='json')
 schedule_parser.add_argument('cmd',type=str, required=False, location='json')
+
+# Callback Parser
+callback_parser = reqparse.RequestParser()
+callback_parser.add_argument('action',type=str, required=True, location='json')
+callback_parser.add_argument('instance_id',type=str, required=True, location='json')
+callback_parser.add_argument('job_id', type=str, required=True, location='json')
 
 class Healthcheck(Resource):
     def get(self):
@@ -165,13 +183,39 @@ class ScheduleStatus(Resource):
         status = jobStore.getJobStatus(id)
         if status == None:
             return { 'message': 'not found'}, 404
-
         return status
 
-
 class ScheduleCallback(Resource):
-    def post(self,id):
-        pass
+    def post(self):
+        # Validate Json Schema with required args (docker_image, schedule)
+        args = schedule_parser.parse_args()
+        jobStore = JobStore()
+        job_status = jobStore.getJobStatus(args['job_id'])
+
+        if job_status == None:
+            return { 'message': 'job not found'}, 404
+
+        if args['action'] == 'update':
+            job_status['aws']['ready'] = True
+            jobStore.setJobStatus(args['job_id'], job_status)
+
+            return {'message': 'success'}
+
+        if args['action'] == 'terminate':
+            # Schedule job on Celery
+            try:
+                job = chain(terminate_ec2_spot_instance.s(
+                    args['instance_id'],
+                    app.config['AWS_SETTINGS']
+                )).apply_async()
+
+                logger.info("celery job_id: %s " % (job.id))
+                return {'message': 'success'}
+
+            except Exception as e:
+                logger.debug("unable to schedule job: %s" % e )
+                return {'message': 'unable to schedule instance termination, try again latter'}, 500
+
 
 # Generic error Handler
 @app.errorhandler(404)
