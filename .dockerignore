@@ -1,0 +1,4 @@
+.venv/
+.ssh/
+*.pyc
+.git/
