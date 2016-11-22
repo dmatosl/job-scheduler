@@ -7,3 +7,4 @@ boto == 2.43.0
 gunicorn == 19.6.0
 pyyaml == 3.12
 iso8601 == 0.1.11
+ansible

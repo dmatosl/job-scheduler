@@ -8,8 +8,8 @@ write-files:
     permissions: 0640
     content: |
       TAG="0.0.1"
-      AWS_ACCESS_KEY="*****************"
-      AWS_SECRET_ACCESS_KEY="**************"
+      AWS_ACCESS_KEY="%AWS_ACCESS_KEY%"
+      AWS_SECRET_ACCESS_KEY="%AWS_SECRET_ACCESS_KEY%"
       API_CMD="/data/run.sh"
       WORKER_CMD="celery -A api.celery worker --concurrency=5 --loglevel=info"
 

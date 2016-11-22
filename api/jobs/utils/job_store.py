@@ -4,6 +4,7 @@ from redis import Redis
 
 class JobStore():
     __key_prefix = 'job:meta:'
+    __conf_prefix = 'conf:meta:'
 
     def __init__(self):
         self.red = Redis(
@@ -35,3 +36,10 @@ class JobStore():
     def setJobStatus(self, job_id, data):
         job = self.__key_prefix + job_id
         return self.red.set(job, json.dumps(data))
+
+    def setJobNotificationUrl(self,url):
+        conf_key = self.__conf_prefix + 'notification_url'
+        return self.red.set(conf_key, url)
+
+    def getJobNotificationUrl(self):
+        return self.red.get(self.__conf_prefix + 'notification_url')

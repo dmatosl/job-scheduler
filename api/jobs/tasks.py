@@ -72,42 +72,70 @@ def run_jobs_mon():
     time.sleep(15)
     return 1+1
 
-@shared_task(max_retries=3)
-def terminate_ec2_spot_instance(instance_id,aws_settings):
-    celery_logger.info("terminating instance_id: %s" % (instance_id))
-    aws = AWSSpotInstance(aws_settings)
-    return aws.terminate_spot_instance(instance_id)
+@shared_task(bind=True, max_retries=3)
+def terminate_ec2_spot_instance(self, instance_id, aws_settings):
+    try:
+        celery_logger.info("terminating instance_id: %s" % (instance_id))
+        aws = AWSSpotInstance(aws_settings)
+        return aws.terminate_spot_instance(instance_id)
+    except Exception as e:
+        celery_logger.info('terminate_ec2_spot_instance Task execution Failed : %s' % e)
+        self.retry(exc=e, countdown=2 ** self.request.retries)
+
 
 @shared_task(bind=True ,max_retries=3)
 def run_container(self, job_id, aws_settings, docker_settings):
     checking_attemps = 100
     checking_interval = 3
     try:
-        # Create EC2 Image
+
         jobStore = JobStore()
-        aws = AWSSpotInstance(aws_settings)
-        state = aws.create_spot_instance()
-        celery_logger.info("aws instance created %s" % state )
 
-        for a in xrange(checking_attemps):
-            job = jobStore.getJobStatus(job_id)
-            if job['aws']['ready']:
-                break
-            time.sleep(checking_interval)
-
-        # RUN Docker Container
-        celery_logger.info("ready to run container")
-        docker = DockerContainer(aws.dns_name)
-        container_status = docker.run_container(docker_image, env, cmd)
+        # Get callback url
+        callback_url = jobStore.getJobNotificationUrl()
 
         job_status = jobStore.getJobStatus(job_id)
-        job_status['status'] = container_status['State']
-        job_status['docker']['container_id'] = container_status['Id']
-        job_status['docker']['container_status'] = container_status['State']
+
+        # Check if instance was created (retries)
+        if len(job_status['aws']['instance_id']) > 1:
+            celery_logger("instance already exists, trying to reuse (%s)" % job_status['aws']['instance_id'])
+            aws = AWSSpotInstance(aws_settings)
+            aws.update_instance(job_status['aws']['instance_id'])
+        else:
+            # Update user_data for new instance
+            user_data = aws_settings['USER_DATA'].replace('%JOB_ID%',job_id)
+            user_data = aws_settings['USER_DATA'].replace('%JOB_SCHEDULER_API_CALLBACK_URL%',callback_url)
+            aws_settings['USER_DATA'] = user_data
+
+            # Create EC2 Instance
+            aws = AWSSpotInstance(aws_settings)
+            state = aws.create_spot_instance()
+            celery_logger.info("aws instance created (%s, %s, %s, %s)" % aws.instance_id, aws.dns_name, aws.ip_address, aws.state )
+
         job_status['aws']['instance_id'] = aws.instance_id
         job_status['aws']['dns_name'] =  aws.dns_name
         job_status['aws']['ip_address'] = aws.ip_address
         job_status['aws']['state'] = aws.state
+
+        # update ec2 instance -> jobStore
+        celery_logger.info('updating ec2 instance information')
+        jobStore.setJobStatus(job_id, job_status)
+
+        for a in xrange(checking_attemps):
+            job_status = jobStore.getJobStatus(job_id)
+            celery_logger.info("checking if aws instance is ready (%s)" % job_status['aws']['ready'])
+            if job_status['aws']['ready'] == True:
+                break
+            time.sleep(checking_interval)
+
+        # RUN Docker Container
+        celery_logger.info("ready to run container %s" % job_id)
+        docker = DockerContainer(aws.dns_name)
+        container_status = docker.run_container(docker_image, env, cmd)
+
+        job_status['status'] = container_status['State']
+        job_status['docker']['container_id'] = container_status['Id']
+        job_status['docker']['container_status'] = container_status['State']
 
         jobStore.setJobStatus(job_id, job_status)
 
@@ -126,9 +154,8 @@ def run_container(self, job_id, aws_settings, docker_settings):
                     jobStore.setJobStatus(job_id, container)
 
                     # trigger callback url
-                    req = requests.get("http://169.254.169.254/latest/meta-data/public-hostname")
-                    payload={'action': 'terminate', 'instance_id': aws.instance_id}
-                    post = requests.post("http://%s/callback" % req.text, json=payload)
+                    payload = {'action': 'terminate', 'instance_id': aws.instance_id, 'job_id': job_id}
+                    post = requests.post(callback_url, json=payload)
                     return job_status
 
     except Exception as e:

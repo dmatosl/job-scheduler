@@ -4,24 +4,24 @@ ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCraLh293buGTXU4MNziPADBl36zmuWjdgb6OXUZqvNScRy9CW1wJ0N4UDhOhmdCfRBBBwhHYFCVaVtgiVunAMztO7o1D8Kk4NybwYl+Z2C9q3LWA77NmQe8nqSzQJeC7KlW2rFQfVraM2X/rWCqEiV2HQyTiVOwuXCscSo7hpwyjLuT/XuNFkTtTaCXubLr2u3T+mg5H+bwqQp1YnQ2Msp7AZFmng016bL+77oFg9efewHvbMNQexxO13hwdfYvoYK3bD/0qoHNdCMQUGw7T2j13LacoTbtHfTUf8Rwp1aaDRI+ocenoSjO52sxoG8YAfeo+abSqCZUtj02Ub0zSIT
 
 write_files:
-  - path: /etc/docker/ca.pem
+  - path: /run/job-scheduler.env
     permissions: 0644
     content: |
-      -----BEGIN CERTIFICATE-----
-      MIIFNDCCAx6gAwIBAgIBATALBgkqhkiG9w0BAQswLTEMMAoGA1UEBhMDVVNBMRAw
+      CALLBACK_URL=%JOB_SCHEDULER_API_CALLBACK_URL%
+      JOB_ID=%JOB_ID%
 
-  - path: /etc/docker/server.pem
-    permissions: 0644
+  - path: /run/job_scheduler_app_ready.sh
+    permissions: 0755
     content: |
-      -----BEGIN CERTIFICATE-----
-      MIIFNDCCAx6gAwIBAgIBATALBgkqhkiG9w0BAQswLTEMMAoGA1UEBhMDVVNBMRAw
+      #!/bin/bash
 
+      set -eof pipefail
 
-  - path: /etc/docker/server-key.pem
-    permissions: 0644
-    content: |
-      -----BEGIN RSA PRIVATE KEY-----
-      MIIFNDCCAx6gAwIBAgIBATALBgkqhkiG9w0BAQswLTEMMAoGA1UEBhMDVVNBMRAw
+      instance_id=$(/usr/bin/curl -sL http://169.254.169.254/latest/meta-data/instance-id)
+
+      /usr/bin/curl -sL -H 'Content-Type: application/json' \
+        --data "{ \"action\": \"update\", \"instance_id\": \"${instance_id}\", \"job_id\": \"${JOB_ID}\"}"
+        http://${CALLBACK_URL}/callback
 
 coreos:
   units:
@@ -40,10 +40,19 @@ coreos:
 
         [Install]
         WantedBy=sockets.target
+
+    - name: job_scheduler_app_ready.service
+      command: start
+      enable: true
+      content: |
+         [Unit]
+         Description=Send notification to job-scheduler-api that host is ready
+         After=docker.service
+
+         [Service]
+         EnvironmentFile=/run/job-scheduler.env
+         Type=oneshot
+         ExecStart=/run/job_scheduler_app_ready.sh
+
     - name: docker.service
       command: start
-#      drop-ins:
-#        - name: 10-tls-verify.conf
-#          content: |
-#            [Service]
-#            Environment="DOCKER_OPTS=--tlsverify --tlscacert=/etc/docker/ca.pem --tlscert=/etc/docker/server.pem --tlskey=/etc/docker/server-key.pem"

@@ -1,6 +1,8 @@
 #!/bin/bash
 # Author: dmatosl <https://github.com/dmatols>
 
+set -eof pipefail
+
 ### APP DEFAULT CONFIG
 
 # GUNICORN
