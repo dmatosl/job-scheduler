@@ -19,7 +19,7 @@ REDIS_PORT=${REDIS_PORT:-"6379"}
 export WORKERS WORKER_CLASS BIND_ADDR LOG_LEVEL ACCESS_LOGFILE REDIS_HOST REDIS_PORT
 
 # GUNICORN CMD
-gunicorn api:app \
+gunicorn api.app:app \
  --access-logfile ${ACCESS_LOGFILE} \
  --log-level ${LOG_LEVEL} \
  --bind ${BIND_ADDR} \
