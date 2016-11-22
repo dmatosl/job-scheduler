@@ -56,7 +56,7 @@ if not 'AWS_SECRET_ACCESS_KEY' in os.environ:
 ###### EC2 Instance
 
 logger.info("Updating user_data with aws credentials")
-user_data = open('./user_data_job_scheduler','r').read()
+user_data = open(os.path.abspath('/user_data/user_data_job_scheduler'),'r').read()
 user_data = user_data.replace('%AWS_ACCESS_KEY%', os.environ['AWS_ACCESS_KEY'])
 user_data = user_data.replace('%AWS_SECRET_ACCESS_KEY%', os.environ['AWS_SECRET_ACCESS_KEY'])
 

@@ -1,13 +1,26 @@
 # job-scheduler
 
 ## Description
+Job-Scheduler is a Backend API for scheduling Jobs (docker containers) execution on fresh AWS EC2 Spot Instances
 
 ## Project Architecture
+Project is devided in two main components: (API and Worker) both components use Redis as a backend (Persistent data store) and Broker (message queue):
+
+- API - Is a simple python (Flask) [http://flask.pocoo.org/] Restful Json API that implements the following routes:
+
+    /schedule   : Schedules the job to be executed at the specified date (respecting ISO8601 format) on Celery Broker (async) and returns job status and id
+    /list       : Get all Scheduled jobs and their status  
+    /status/<string:id> : Get a specific job details (id, status, scheduled time, aws_instance information, docker container information, celery information)
+    /callback   : Receives notification of ready ec2 spot instances to run the disered job and to start instance termination (after job execution)
+    /healthcheck: Simply return live string to check if the service is Up and running
+
+- WORKER - Is a celery instance that executes scheduled jobs base on ISO8601 date. All the jobs are published in a Redis Broker by the API. Once the worker start running the job it will be responsible to keep tracking of the EC2 spot Instance status monitoring and Docker Container status execution. Based on the response it will mark the job as failed, or successfully finished.
 
 ## Dependencies
 
-- AWS Credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS)
-- Redis as a Broker and Backend for Celery and keep tracking of Container/EC2 Instance state
+- AWS Credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS) for spinning new EC2 spot Instances
+- Redis as a Broker and Backend for [Celery] (http://www.celeryproject.org/) to keep tracking of Container/EC2 Instance state
+- Docker environment (docker-machine, docker for mac,  docker for windows, ...) for building locally and deploying to AWS
 
 ## Build job-scheduler
 
@@ -16,6 +29,10 @@ After cloning repository, cwd into src directory and RUN:
     docker build -t job-scheduler:0.0.1 .
 
 ## Deploy job-scheduler to EC2
+
+    Add your SSH public key to user_data files (ssh_authorized_keys section):
+        job-scheduler/user_data/user_data_docker
+        job-scheduler/user_data/user_data_job_scheduler
 
     export AWS_ACCESS_KEY=yourAccessKey
     export AWS_SECRET_ACCESS_KEY=yourSecretAccessKey
@@ -26,28 +43,39 @@ After cloning repository, cwd into src directory and RUN:
       job-scheduler:0.0.1 \
       /bin/bash deploy.sh
 
+It will output the EC2 Instance information
+
 These commands will spinup an EC2 CoreOS instance and deploy 3 Containers:
 
-- job-scheduler-redis
-- job-scheduler-worker
-- job-scheduler-api
-
+- job-scheduler-redis (backen and broker)
+- job-scheduler-worker (celery worker for job execution)
+- job-scheduler-api (Restful Json API)
 
 ## API Endpoints
-These API is not open to public internet by default. It is recommended to setup Security Groups and limit API access (these topic is not covered on this project)
+These API is not open to public internet by default, so it is necessary to access the API locally (ssh to the ec2 instance to perform the tests). 
+It is recommended to setup Security Groups and limit API access (these topic is not covered on this project). 
+Examples on how to create security groups were added to file deploy-job-scheduler.py
 
 POST /schedule
-200 OK
+Required Header: 'Content-Type: application/json'
+
 ```json```
 {
-    "schedule": "2016-11-12 00:00:00",
+    "schedule": "2016-11-22T19:39:22Z",
     "docker_image": "alpine:latest",
-    "docker_env": [
-        "foo=bar"
+    "env": [
+        "key=value",
+        "key1=value=1"
     ],
     "cmd": "sleep 60"
 }
 ```
+- schedule: ISO8601 date
+- docker_image: any valid docker image from public or private
+- env: list of "key=value" pairs (not required by default)
+- cmd: command to be executed (not required by default)
+
+    NOTE for private docker registry: you will need to add --insecure-registry myprivateregistry.com:XXXX flag to user_data/user_data_docker Docker Service definition
 
 Response
 200 OK
@@ -64,7 +92,7 @@ GET /status/7aab581b-39c6-410d-a6a5-5db60ba4c9da
 {
     "id": "ebacas13poasdA23lk",
     "scheduled_time": "2016-11-12 00:00:00",
-    "status": "running"
+    "status": "running" 
 }
 ```
 
