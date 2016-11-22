@@ -10,6 +10,11 @@ JSON_ADD_STATUS = True
 JSONSCHEMA_DIR  = os.path.abspath("schemas")
 
 # Redis config
+if not 'REDIS_HOST' in os.environ:
+    os.environ['REDIS_HOST'] = "redis"
+if not 'REDIS_PORT' in os.environ:
+    os.environ['REDIS_PORT'] = "6379"
+
 REDIS_HOST = os.environ['REDIS_HOST']
 REDIS_PORT = os.environ['REDIS_PORT']
 REDIS_DB = "0"

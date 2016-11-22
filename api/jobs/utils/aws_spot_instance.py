@@ -34,7 +34,7 @@ class AWSSpotInstance():
         self.aws_key_name = aws_settings['AWS_KEY_NAME']
 
     def create_spot_instance(self):
-        logger.debug('request_spot_instance')
+        logger.info('request_spot_instance')
         self.spot_instance = self.cli.request_spot_instances(
             price = self.instance_spot_price,
             count = self.instance_count,
@@ -45,46 +45,50 @@ class AWSSpotInstance():
             security_groups = self.instance_security_groups
         )
 
-        logger.debug('adding_tags')
+        logger.info('adding_tags: %s' % self.instance_tags)
         for spot in self.spot_instance:
             spot.add_tags(self.instance_tags)
 
         spot_ids = [s.id for s in self.spot_instance]
 
         for attempt in xrange(self.__CHECK_ATTEMPTS):
-            logger.debug('attempt %s' % attempt)
+            logger.info('attempt number %s' % attempt)
             self.spot_instance = self.cli.get_all_spot_instance_requests(request_ids=spot_ids)
             instance_id = [s.instance_id for s in self.spot_instance if s.instance_id != None]
-            logger.debug('spot_ids: %s, instance_id: %s' % (spot_ids, instance_id))
+            logger.info('spot_ids: %s, instance_id: %s' % (spot_ids, instance_id))
 
             if len(instance_id) == len(spot_ids):
-                logger.debug('instance_ready')
+                logger.info('instance_ready')
 
                 try:
                     for instance in self.cli.get_only_instances(instance_ids=instance_id):
+                        logger.info('gathering instance information')
 
                         instance.update()
                         self.state = instance.state
                         self.ip_address = instance.ip_address
                         self.dns_name = instance.public_dns_name
                         self.instance_id = instance.id
+
+                        logger.info('Instance information updated: (state: %s, ip_address: %s, dns_name: %s, instance_id: %s)' % (self.state, self.ip_address, self.dns_name, self.instance_id ))
                     break
 
                 except EC2ResponseError as e:
                     logger.info('aws return 400 (instance not found, ignoring), %s' % e)
 
             else:
-                logger.debug('instance not ready ... waiting')
+                logger.info('instance not ready ... waiting %s seconds, %s' % (self.__CHECK_INTERVAL, instance_id))
                 time.sleep(self.__CHECK_INTERVAL)
 
         while self.state != 'running':
-            logger.debug('waiting for instance reach running state: (state: %s)' % self.state)
+            logger.info('waiting for instance reach running state: (state: %s, instance_id: %s)' % (self.state, self.instance_id))
             time.sleep(self.__CHECK_INTERVAL)
             self.update_instance(self.instance_id)
 
         return self.state
 
     def update_instance(self,instance_id):
+        logger.info('updating instance state %s' % instance_id)
         try:
             instance = self.cli.get_only_instances(instance_ids=instance_id)[0]
             self.state = instance.update()
@@ -98,12 +102,13 @@ class AWSSpotInstance():
         return self.state
 
     def terminate_spot_instance(self, instance_id):
+        logger.info('terminating instance: %s' % instance_id)
         try:
             instance = self.cli.get_only_instances(instance_ids=instance_id)[0]
             instance.terminate()
 
             while self.state != 'terminated':
-                logger.debug('waiting for instance reach terminated state: (state: %s)' % self.state)
+                logger.info('waiting for instance reach terminated state: (state: %s)' % self.state)
                 time.sleep(self.__CHECK_INTERVAL)
                 self.update_instance(instance_id)
 
