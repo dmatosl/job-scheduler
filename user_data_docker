@@ -21,7 +21,7 @@ write_files:
 
       /usr/bin/curl -sL -H 'Content-Type: application/json' \
         --data "{ \"action\": \"update\", \"instance_id\": \"${instance_id}\", \"job_id\": \"${JOB_ID}\"}" \
-        http://${CALLBACK_URL}
+        ${CALLBACK_URL}
 
 coreos:
   units:
