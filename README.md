@@ -6,13 +6,35 @@
 
 ## Dependencies
 
-  1) AWS Credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS)
-  2) Redis as a Broker and Backend for Celery and keep tracking of Container state
+- AWS Credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS)
+- Redis as a Broker and Backend for Celery and keep tracking of Container/EC2 Instance state
 
 ## Build job-scheduler
-## Run job-scheduler
+
+After cloning repository, cwd into src directory and RUN:
+
+    docker build -t job-scheduler:0.0.1 .
+
+## Deploy job-scheduler to EC2
+
+    export AWS_ACCESS_KEY=yourAccessKey
+    export AWS_SECRET_ACCESS_KEY=yourSecretAccessKey
+
+    docker run --rm -it \
+      -e "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" \
+      -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+      job-scheduler:0.0.1 \
+      /bin/bash deploy.sh
+
+These commands will spinup an EC2 CoreOS instance and deploy 3 Containers:
+
+- job-scheduler-redis
+- job-scheduler-worker
+- job-scheduler-api
+
 
 ## API Endpoints
+These API is not open to public internet by default. It is recommended to setup Security Groups and limit API access (these topic is not covered on this project)
 
 POST /schedule
 200 OK
