@@ -52,57 +52,143 @@ These commands will spinup an EC2 CoreOS instance and deploy 3 Containers:
 - job-scheduler-api (Restful Json API)
 
 ## API Endpoints
-These API is not open to public internet by default, so it is necessary to access the API locally (ssh to the ec2 instance to perform the tests). 
-It is recommended to setup Security Groups and limit API access (these topic is not covered on this project). 
+These API is not open to public internet by default, so it is necessary to access the API locally (ssh to the ec2 instance to perform the tests).
+It is recommended to setup Security Groups and limit API access (these topic is not covered on this project).
 Examples on how to create security groups were added to file deploy-job-scheduler.py
 
 POST /schedule
+
 Required Header: 'Content-Type: application/json'
 
 ```json```
 {
-    "schedule": "2016-11-22T19:39:22Z",
-    "docker_image": "alpine:latest",
-    "env": [
-        "key=value",
-        "key1=value=1"
-    ],
-    "cmd": "sleep 60"
+  "schedule": "2016-11-22T19:39:22Z",
+  "docker_image": "alpine:latest",
+  "env": [
+      "key=value",
+      "key1=value=1"
+  ],
+  "cmd": "sleep 60"
 }
 ```
 - schedule: ISO8601 date
-- docker_image: any valid docker image from public or private
+- docker_image: any valid docker image from public or private registry
 - env: list of "key=value" pairs (not required by default)
 - cmd: command to be executed (not required by default)
 
-    NOTE for private docker registry: you will need to add --insecure-registry myprivateregistry.com:XXXX flag to user_data/user_data_docker Docker Service definition
+    ***NOTE for private docker registry: you will need to add --insecure-registry myprivateregistry.com:XXXX flag to user_data/user_data_docker Docker Service definition***
+
+Curl Example:
+
+    run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+6 minutes')
+
+    curl -s -i -H 'Content-Type: application/json' \
+      -X POST --data "{ \"docker_image\": \"python:2.7-sim\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"] }" \
+       localhost/schedule
+
 
 Response
+
+Content-Type: application/json
+
 200 OK
+
 ```json```
 {
-    "id" : "7aab581b-39c6-410d-a6a5-5db60ba4c9da",
-    "message": "scheduled"
+  "status": "scheduled",
+  "message": "job successfully scheduled",
+  "id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G"
 }
 ```
 
-GET /status/7aab581b-39c6-410d-a6a5-5db60ba4c9da
+GET /status/xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G
+
+Content-Type: application/json
+
 200 OK
 ```json```
 {
-    "id": "ebacas13poasdA23lk",
-    "scheduled_time": "2016-11-12 00:00:00",
-    "status": "running" 
+  "status": "running",
+  "schedule": "2016-11-18T23:59:59",
+  "aws": {
+    "instance_id": "i-0bfe22184ff4c092c",
+    "dns_name": "ec2-107-23-178-40.compute-1.amazonaws.com",
+    "ready": true,
+    "ip_address": "107.23.178.40",
+    "state": "running"
+  },
+  "celery": {
+    "job_parent_id": "1d594747-a0c7-4b54-a33b-c6098fbefc38"
+  },
+  "docker": {
+    "container_id": "4ac3b8eb8b32006160be15c34e87132f545f593ec066721f6bb1582a04f6765a",
+    "container_status": "running",
+    "environment": [
+      "key1=value",
+      "key2=value2"
+    ],
+    "command": "sleep 120",
+    "docker_image": "alpine:latest",
+    "container_exit_code": ""
+  },
+  "id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G"
+}
+```
+
+GET /list
+
+Content-Type: application/json
+
+200 OK
+```json```
+{
+  "jobs": [
+    {
+      "status": "scheduled",
+      "id": "vmi6xFA22PX4FDTWSEQlNl2RKS5Wyz8E",
+      "schedule": "2016-11-22T20:10:40Z"
+    },
+    {
+      "status": "failed",
+      "id": "ocFCwTHM20wOtIuLC0hCaUJTCxi20TQS",
+      "schedule": "2016-11-22T20:09:40Z"
+    },
+    {
+      "status": "running",
+      "id": "Ag0L7XG978UD75CX5xHcZ5tokmYFWNPL",
+      "schedule": "2016-11-22T20:08:40Z"
+    },
+    {
+      "status": "finished",
+      "id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G",
+      "schedule": "2016-11-18T23:59:59"
+    }
+  ]
 }
 ```
 
 GET /callback
-200 OK
+
+Terminate instance
+
 ```json```
 {
-
+  "action": "terminate",
+  "job_id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G",
+  "instance_id": "i-0bfe22184ff4c092c"
 }
 ```
+
+Mark ec2 instance as ready for job execution
+
+```json```
+{
+  "action": "update",
+  "job_id": "xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G",
+  "instance_id": "i-0bfe22184ff4c092c"
+}
+```
+
 
 # Reference doc/guides:
 http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html
