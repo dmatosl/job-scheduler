@@ -1,6 +1,6 @@
 import os
 import sys
-from config import *
+from config import LOG_FILE, LOG_FORMAT, AWS_SETTINGS
 import logging
 from api.jobs.utils.aws_spot_instance import AWSSpotInstance
 from boto.ec2.connection import EC2Connection
@@ -55,6 +55,7 @@ if not 'AWS_SECRET_ACCESS_KEY' in os.environ:
 
 ###### EC2 Instance
 
+logger.info("Updating user_data with aws credentials")
 user_data = open('./user_data_job_scheduler','r').read()
 user_data = user_data.replace('%AWS_ACCESS_KEY%', os.environ['AWS_ACCESS_KEY'])
 user_data = user_data.replace('%AWS_SECRET_ACCESS_KEY%', os.environ['AWS_SECRET_ACCESS_KEY'])
@@ -63,6 +64,7 @@ AWS_SETTINGS['AWS_USER_DATA'] = user_data
 AWS_SETTINGS['AWS_SECURITY_GROUPS'] = ['default']
 #AWS_SETTINGS['AWS_SECURITY_GROUPS'] = ['job_scheduler_app_sg']
 
+logger.info("start ec2 spot instance request")
 aws = AWSSpotInstance(AWS_SETTINGS)
 state = aws.create_spot_instance()
 
