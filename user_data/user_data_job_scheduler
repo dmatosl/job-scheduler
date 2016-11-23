@@ -11,7 +11,7 @@ write-files:
       AWS_ACCESS_KEY="%AWS_ACCESS_KEY%"
       AWS_SECRET_ACCESS_KEY="%AWS_SECRET_ACCESS_KEY%"
       API_CMD="/data/run.sh"
-      WORKER_CMD="celery -A api.app.celery worker --concurrency=5 --loglevel=info"
+      WORKER_CMD="celery -A api.app.celery worker --concurrency=15 --loglevel=info"
 
   - path: /run/job_scheduler_fetch_app.sh
     permissions: 0755
