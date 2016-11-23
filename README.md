@@ -56,7 +56,7 @@ These API is not open to public internet by default, so it is necessary to acces
 It is recommended to setup Security Groups and limit API access (these topic is not covered on this project).
 Examples on how to create security groups were added to file deploy-job-scheduler.py
 
-POST /schedule
+### POST /schedule
 
 Required Header: 'Content-Type: application/json'
 
@@ -80,12 +80,15 @@ Required Header: 'Content-Type: application/json'
 
 Curl Example:
 
+```bash
+    # scheduling job for within 6 minutes
+    # current data + 6 minutes
     run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+6 minutes')
 
     curl -s -i -H 'Content-Type: application/json' \
       -X POST --data "{ \"docker_image\": \"python:2.7-sim\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"] }" \
        localhost/schedule
-
+```
 
 Response
 
@@ -101,7 +104,7 @@ Content-Type: application/json
 }
 ```
 
-GET /status/xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G
+### GET /status/xqKQiunYlaKrPhDSfj06tUzSvPiGJJ9G
 
 Content-Type: application/json
 
@@ -135,7 +138,7 @@ Content-Type: application/json
 }
 ```
 
-GET /list
+### GET /list
 
 Content-Type: application/json
 
@@ -167,7 +170,7 @@ Content-Type: application/json
 }
 ```
 
-GET /callback
+### GET /callback
 
 Terminate instance
 
