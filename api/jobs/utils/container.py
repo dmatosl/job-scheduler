@@ -1,4 +1,8 @@
 from docker import Client
+from docker.errors import NotFound
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DockerContainer():
 
@@ -28,19 +32,24 @@ class DockerContainer():
             if cmd.strip() == '':
                 cmd = None
 
-            container = self.cli.create_container(
-                docker_image,
-                environment=env,
-                command=cmd
-            )
+            try:
+                container = self.cli.create_container(
+                    docker_image,
+                    environment=env,
+                    command=cmd
+                )
 
-            self.cli.start(resource_id=container)
+                self.cli.start(resource_id=container)
 
-            container_status = self.cli.containers(
-                all=True,
-                filters={'id': container['Id']}
-            )[0]
+                container_status = self.cli.containers(
+                    all=True,
+                    filters={'id': container['Id']}
+                )[0]
 
-            return container_status
+                return container_status
+            except NotFound as e :
+
+                logger.info('Failed to run container: %s' % e)
+                return None
         else:
             return None
