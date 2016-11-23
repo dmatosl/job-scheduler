@@ -173,11 +173,23 @@ class Schedule(Resource):
         }
 
 class ScheduleList(Resource):
+        """
+        Action: GET
+        Uri: /list
+
+        Description: Retrieve a list with all scheduled jobs
+        """
     def get(self):
         jobStore = JobStore()
         return jobStore.getAllJobs()
 
 class ScheduleStatus(Resource):
+        """
+        Action: GET
+        Uri: /get/status/<string:id>
+
+        Description: Retrieve job status information (aws instance state)
+        """
     def get(self,id):
         jobStore = JobStore()
         status = jobStore.getJobStatus(id)
@@ -186,6 +198,30 @@ class ScheduleStatus(Resource):
         return status
 
 class ScheduleCallback(Resource):
+        """
+        Action: POST
+        Uri: /callback
+        Payload 1:
+         Content-Type: application/json
+         {
+            "action": "terminate",
+            "job_id": "<string:id>",
+            "instance_id": "i-abcd0981"
+         }
+
+        Description: Parse Request Body (json) and triggers ec2 instance termination
+
+        Payload 2:
+         Content-Type: application/json
+         {
+            "action": "update",
+            "job_id": "<string:id>",
+            "instance_id": "i-abcd0981"
+         }
+
+        Description: Parse Request Body (json) and mark ec2 instance as ready for job execution
+
+        """
     def post(self):
         # Validate Json Schema with required args (action, job_id, instance_id)
         logger = logging.getLogger("ScheduleCallback")

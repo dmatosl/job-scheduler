@@ -4,7 +4,7 @@
 Job-Scheduler is a Backend API for scheduling Jobs (docker containers) execution on fresh AWS EC2 Spot Instances
 
 ## Project Architecture
-Project is devided in two main components: (API and Worker) both components use Redis as a backend (Persistent data store) and Broker (message queue):
+Project is divided in two main components: (API and Worker) both components use Redis as a backend (Persistent data store) and Broker (message queue):
 
 - API - Is a simple python (Flask) [http://flask.pocoo.org/] Restful Json API responsible for parsing requests and enqueuing jobs to Celery Workers perform the job execution. The API implements the following routes:
 
@@ -89,7 +89,7 @@ Curl Example:
     run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+6 minutes')
 
     curl -s -i -H 'Content-Type: application/json' \
-      -X POST --data "{ \"docker_image\": \"python:2.7-sim\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"] }" \
+      -X POST --data "{ \"docker_image\": \"python:2.7-slim\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"] }" \
        localhost/schedule
 ```
 
