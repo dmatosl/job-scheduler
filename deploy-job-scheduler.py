@@ -69,24 +69,30 @@ aws = AWSSpotInstance(AWS_SETTINGS)
 state = aws.create_spot_instance()
 
 print "##########################################"
-print ""
-print "AWS Information"
-print ""
-print "Instance_id: %s" % aws.instance_id
-print "Instance_State: %s" % aws.state
-print "Instance_dns_name: %s" % aws.dns_name
-print "Instance_ip_address: %s" % aws.ip_address
-print ""
-print ""
-print "SSH Access to Instance: ssh -i <your_key> core@%s" % aws.ip_address
-print ""
+print "#"
+print "# AWS Information"
+print "##########################################"
+print "# Instance_id: %s" % aws.instance_id
+print "# Instance_State: %s" % aws.state
+print "# Instance_dns_name: %s" % aws.dns_name
+print "# Instance_ip_address: %s" % aws.ip_address
+print "# User: core"
+print "# SSH Access to Instance: ssh -i <your_key> core@%s" % aws.ip_address
+print "# "
 print "################################# Testing API"
-print ""
-print "Check if containers job-scheduler-api, job-scheduler-worker and job-scheduler-redis are running (they could take a few seconds to start)"
-print ""
-print "API Endpoint Healthcheck: http://localhost/healthcheck" % aws.dns_name
-print "API Endpoint Schedule: http://localhost/schedule" % aws.dns_name
-print "API Endpoint Status: http://localhost/status/<string:id>" % aws.dns_name
-print "API Endpoint List: http://localhost/list" % aws.dns_name
-print "API Endpoint Callback: http:/localhost/callback" % aws.dns_name
+print "#"
+print "# Check if containers job-scheduler-api, job-scheduler-worker and job-scheduler-redis are running (they could take a few seconds to start)"
+print "# After accessing throught ssh , run the following command to check if the services are up and running:"
+print "# /usr/bin/curl -s -i http://localhost/healthcheck"
+print "# "
+print '# Expected output: { "message": "live" } '
+print "# "
+print "# API Endpoint Healthcheck: http://localhost/healthcheck"
+print "# API Endpoint Schedule: http://localhost/schedule"
+print "# API Endpoint Status: http://localhost/status/<string:id>"
+print "# API Endpoint List: http://localhost/list" 
+print "# API Endpoint Callback: http:/localhost/callback"
+print "#"
+print "##########################################"
+print "# Examples payloads and requests: /tmp/src/job-scheduler/api_tests.sh"
 print "##########################################"
