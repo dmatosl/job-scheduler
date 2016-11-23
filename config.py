@@ -43,6 +43,6 @@ AWS_SETTINGS = {
     "AWS_USER_DATA": open(os.path.abspath("user_data/user_data_docker")).read(),
     "AWS_SECURITY_GROUPS": ['default'],
     "AWS_TAGS":{
-        'Name': 'job-cheduler-daniel.matos'
+        'Name': 'job-scheduler-daniel.matos'
     }
 }
