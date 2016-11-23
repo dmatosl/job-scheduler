@@ -51,5 +51,5 @@ echo
 
 echo "######## /SCHEDULE valid eta=1min"
 run_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ" -d '+1 minutes')
-curl -s -i -H 'Content-Type: application/json' -X POST --data "{ \"docker_image\": \"alpine:latest\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"], \"cmd\": \"pip install ansible\" }" $BASE_URL/schedule
+curl -s -i -H 'Content-Type: application/json' -X POST --data "{ \"docker_image\": \"python:2.7-slim\", \"schedule\": \"${run_date}\", \"env\": [\"key1=value\", \"key2=value2\"], \"cmd\": \"pip install ansible\" }" $BASE_URL/schedule
 echo
