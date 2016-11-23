@@ -12,13 +12,13 @@ celery_logger = get_task_logger(__name__)
 
 @shared_task(bind=True, max_retries=3)
 def terminate_ec2_spot_instance(self, job_id, instance_id, aws_settings):
-        """
-        Description: EC2 Instance termination function
-        Params:
-            job_id (str)
-            instance_id(str)
-            aws_settings(dict)
-        """
+    """
+    Description: EC2 Instance termination function
+    Params:
+        job_id (str)
+        instance_id(str)
+        aws_settings(dict)
+    """
     try:
         celery_logger.info("terminating instance_id: %s, %s" % (instance_id, job_id))
         aws = AWSSpotInstance(aws_settings)
@@ -37,13 +37,13 @@ def terminate_ec2_spot_instance(self, job_id, instance_id, aws_settings):
 
 @shared_task(bind=True ,max_retries=3)
 def run_container(self, job_id, aws_settings, docker_settings):
-        """
-        Description: EC2 Instance creation, docker container execution and monitoring
-        Params: 
-            job_id(str)
-            aws_settings(dict)
-            docker_settings(dict)
-        """
+    """
+    Description: EC2 Instance creation, docker container execution and monitoring
+    Params:
+        job_id(str)
+        aws_settings(dict)
+        docker_settings(dict)
+    """
     checking_attemps = 100
     checking_interval = 5
     try:
