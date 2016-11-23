@@ -47,7 +47,7 @@ It will output the EC2 Instance information
 
 These commands will spinup an EC2 CoreOS instance and deploy 3 Containers:
 
-- job-scheduler-redis (backen and broker)
+- job-scheduler-redis (backend and broker)
 - job-scheduler-worker (celery worker for job execution)
 - job-scheduler-api (Restful Json API)
 
@@ -71,12 +71,15 @@ Required Header: 'Content-Type: application/json'
   "cmd": "sleep 60"
 }
 ```
-- schedule: ISO8601 date
-- docker_image: any valid docker image from public or private registry
+
+Parameters:
+
+- schedule: ISO8601 date (Required)
+- docker_image: any valid docker image from public or private registry (Required)
 - env: list of "key=value" pairs (not required by default)
 - cmd: command to be executed (not required by default)
 
-    ***NOTE for private docker registry: you will need to add --insecure-registry myprivateregistry.com:XXXX flag to user_data/user_data_docker Docker Service definition***
+  ***NOTE for private docker registry: you will need to add --insecure-registry myprivateregistry.com:XXXX flag to user_data/user_data_docker Docker Service definition***
 
 Curl Example:
 
@@ -170,7 +173,7 @@ Content-Type: application/json
 }
 ```
 
-### GET /callback
+### POST /callback
 
 Terminate instance
 
@@ -181,6 +184,12 @@ Terminate instance
   "instance_id": "i-0bfe22184ff4c092c"
 }
 ```
+
+Parameters:
+
+- action: 'terminate' or 'update': used to trigger instance termination or update instance status (ready: true)
+- job_id: auto filled by the ec2 instance that run the job
+- instance_id: auto filled by the ec2 instance that run the job (Required)
 
 Mark ec2 instance as ready for job execution
 
