@@ -19,7 +19,6 @@ Project is divided in two main components: (API and Worker) both components use 
 ## Dependencies
 
 - AWS Credentials (AWS_ACCESS_KEY and AWS_SECRET_ACCESS) for spinning new EC2 spot Instances
-- Redis as a Broker and Backend for [Celery] (http://www.celeryproject.org/) to keep tracking of Container/EC2 Instance state
 - Docker environment (docker-machine, docker for mac,  docker for windows, ...) for building locally and deploying to AWS
 
 ## Build job-scheduler
