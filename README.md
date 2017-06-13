@@ -1,6 +1,5 @@
 # job-scheduler
 
-
 ## Description
 Job-Scheduler is a Backend API for scheduling Jobs (docker containers) execution on fresh AWS EC2 Spot Instances
 
