@@ -3,6 +3,7 @@
 ## Description
 Job-Scheduler is a Backend API for scheduling Jobs (docker containers) execution on fresh AWS EC2 Spot Instances
 
+
 ## Project Architecture
 Project is divided in two main components: (API and Worker) both components use Redis as a backend (Persistent data store) and Broker (message queue):
 
